@@ -1,8 +1,8 @@
 # Watermark App
 
-This is my first desktop app using Python and Tkinter. It lets you upload an image and add a watermark — either text or a logo — automatically.
+This is my first desktop app using Python and Tkinter. It lets you upload an image and add a watermark automatically.
 
-I made this because I wanted an easy way to watermark my photos before posting them online.
+I made this in the context of a course I'm attending. It's an easy way to watermark photos before posting them online.
 
 Features
 
