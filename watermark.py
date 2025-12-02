@@ -6,9 +6,30 @@ PREVIEW_WIDTH = 300
 PREVIEW_HEIGHT = 300
 PREVIEW_PADDING = 20
 
+
 # GUI setup
 root = tk.Tk()
 root.title("Watermark App")
+watermark_mode = tk.StringVar(value="text") # this is the default mode
+logo_img = None
+logo_path = None
+
+mode_frame = tk.Frame(root)
+mode_frame.pack(pady=5)
+
+tk.Radiobutton(mode_frame, text="Text Watermark", variable=watermark_mode, value="text").pack(side="left")
+tk.Radiobutton(mode_frame, text="Logo Watermark", variable=watermark_mode, value="logo").pack(side="left")
+
+# Button to upload logo
+def upload_logo():
+    global logo_img, logo_path
+    logo_path = filedialog.askopenfilename(filetypes=[("PNG Files", "*.png")])
+    if logo_path:
+        logo_img = Image.open(logo_path).convert("RGBA")
+        messagebox.showinfo("Logo Loaded", "Logo loaded successfully.")
+
+upload_logo_button = tk.Button(root, text="Upload Logo", command=upload_logo)
+upload_logo_button.pack(pady=5)
 
 # Canvas to show image
 canvas = tk.Canvas(root, width=PREVIEW_WIDTH + 2*PREVIEW_PADDING, height=PREVIEW_HEIGHT + 2*PREVIEW_PADDING)
@@ -38,7 +59,7 @@ def upload_image():
         # Center image inside the canvas with padding
         x_offset = PREVIEW_PADDING + (PREVIEW_WIDTH - new_width)//2
         y_offset = PREVIEW_PADDING + (PREVIEW_HEIGHT - new_height)//2
-        
+
         canvas.delete("all")
         canvas.create_image(x_offset, y_offset, anchor="nw", image=tk_img)
 
@@ -46,48 +67,70 @@ def upload_image():
 
 # Function to add watermark
 def add_watermark():
-    if not img_path:
+    global img, logo_img
+
+    if not img:
         messagebox.showerror("Error", "No image uploaded")
         return
 
-    water_text = watermark_entry.get()
-    if not water_text:
-        messagebox.showerror("Error", "Please enter watermark text")
-        return
+    mode = watermark_mode.get()
+    watermarked = img.copy()
+
+    if mode == "text":
+        text = watermark_entry.get()
+        if not text.strip() or text == "Enter your watermark here":
+            messagebox.showerror("Error", "Please enter watermark text")
+            return 
+
+        draw = ImageDraw.Draw(watermarked)
+        
+        # Choose font and size
+        font = ImageFont.truetype("Arial.ttf", 200)
     
-    # Convert image to RGBA
-    watermarked = img.convert("RGBA")
-
-    # Transparent layer the same size as the image
-    txt_layer = Image.new("RGBA", watermarked.size, (255, 255, 255, 0))
-    draw = ImageDraw.Draw(txt_layer)
-
-    # Choose font and size
-    font = ImageFont.truetype("Arial.ttf", 200)
     
-    # Text width and height
-    bbox = draw.textbbox((0, 0), water_text, font=font)
-    text_width = bbox[2] - bbox[0]
-    text_height = bbox[3] - bbox[1]
+        # Text size
+        bbox = draw.textbbox((0, 0), text, font=font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
 
-    # Right bottom corner position
-    x = (watermarked.width - text_width) // 2
+        # Center bottom position
+        x = (watermarked.width - text_width) // 2
+        y = watermarked.height - text_height - 40  # 40px padding from bottom
 
-    bottom_padding = 200
-    y = watermarked.height - text_height - bottom_padding
+        # Draw the text
+        draw.text((x, y), text, font=font, fill=(255,255,255,128)) # white with transparency
 
-    # Draw the text
-    draw.text((x, y), water_text, font=font, fill=(255,255,255,128)) # white with transparency
+    elif mode == "logo":
+        if logo_img is None:
+            messagebox.showerror("Error", "No logo uploaded.")
+            return
+        
+        # Resize logo (10% of image width)
+        scale_w = watermarked.width // 6
+        ratio = scale_w / logo_img.width
+        resized = logo_img.resize((scale_w, int(logo_img.height * ratio)))
 
-    # Merge layers 
-    watermarked = Image.alpha_composite(watermarked, txt_layer)
+        # ---- Apply white transparency to the logo ----
+        # Convert the logo to RGBA 
+        tinted = Image.new("RGBA", resized.size, (255, 255, 255, 0))
+        white_overlay = Image.new("RGBA", resized.size, (255, 255, 255, 128)) # 50% opacity
+
+        # Keep the shape by using its alpha channel as a mask
+        tinted = Image.composite(white_overlay, tinted, resized.split()[3])
+
+        # Position centered bottom
+        logo_width, logo_height = tinted.size
+        bottom_padding = 200
+
+        x = (watermarked.width - logo_width) // 2
+        y = watermarked.height - logo_height - bottom_padding
+        
+        watermarked.paste(tinted, (x, y), tinted)
     
     # Save the watermarked final image
     save_path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG Files", "*.png"), ("JPEG Files", "*.jpg")])
 
     if save_path:
-        if save_path.lower().endswith(".jpg"):
-            watermarked = watermarked.convert("RGB")
         watermarked.save(save_path)
         messagebox.showinfo("Success", f"Watermarked image saved to {save_path}.")
     
