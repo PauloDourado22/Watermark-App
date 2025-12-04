@@ -1,5 +1,6 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox
+import tkinter.font as tkFont
+from tkinter import filedialog, messagebox, ttk
 from PIL import Image, ImageDraw, ImageFont, ImageTk
 
 
@@ -24,16 +25,20 @@ logo_path = None
 
 root = tk.Tk()
 root.title("Watermark App")
+
+default_font = tkFont.Font(family="Helvetica", size=12)
+root.option_add("*Font", default_font)
+
 watermark_mode = tk.StringVar(value="text")  # default mode
 
 
 # Mode Selection
 
-mode_frame = tk.Frame(root)
+mode_frame = ttk.Frame(root)
 mode_frame.pack(pady=5)
 
-tk.Radiobutton(mode_frame, text="Text Watermark", variable=watermark_mode, value="text").pack(side="left")
-tk.Radiobutton(mode_frame, text="Logo Watermark", variable=watermark_mode, value="logo").pack(side="left")
+ttk.Radiobutton(mode_frame, text="Text Watermark", variable=watermark_mode, value="text").pack(side="left", padx=10)
+ttk.Radiobutton(mode_frame, text="Logo Watermark", variable=watermark_mode, value="logo").pack(side="left", padx=10)
 
 
 # Upload Logo
@@ -45,8 +50,7 @@ def upload_logo():
         logo_img = Image.open(logo_path).convert("RGBA")
         messagebox.showinfo("Logo Loaded", "Logo loaded successfully.")
 
-upload_logo_button = tk.Button(root, text="Upload Logo", command=upload_logo)
-upload_logo_button.pack(pady=5)
+
 
 
 # Canvas for Preview
@@ -99,8 +103,11 @@ def upload_image():
         messagebox.showinfo("Images Loaded", f"{len(multiple_images)} images selected.")
         print(f"Loaded {len(multiple_images)} images.")
 
-upload_button = tk.Button(root, text="Upload Image", command=upload_image)
+upload_button = ttk.Button(root, text="Upload Image", command=upload_image)
 upload_button.pack(pady=10)
+
+upload_logo_button = ttk.Button(root, text="Upload Logo", command=upload_logo)
+upload_logo_button.pack(pady=5)
 
 
 # Watermark Input with Placeholder
@@ -125,9 +132,45 @@ def on_focusout(event):
 watermark_entry.bind("<FocusIn>", on_entry_click)
 watermark_entry.bind("<FocusOut>", on_focusout)
 
+# Watermark Position Selection
+position_label = ttk.Label(root, text="Watermark Position: ")
+position_label.pack(pady=(5, 0))
+
+position_var = tk.StringVar()
+position_combination = ttk.Combobox(
+    root,
+    textvariable= position_var,
+    state="readonly",
+    width=20,
+    values= [
+        "Center",
+        "Top-Left",
+        "Top-Center",
+        "Top-Right",
+        "Bottom-Left",
+        "Bottom-Center",
+        "Bottom-Right"
+    ] 
+)
+position_combination.current(0)
+position_combination.pack(pady=10)
+
+# Hover cursor effect
+def on_combo_enter(event):
+    position_combination.config(cursor="hand2")
+
+def on_combo_leave(event):
+    position_combination.config(cursor="arrow")
+
+def on_combo_motion(event):
+    position_combination.config(cursor="hand2")
+
+position_combination.bind("<Enter>", on_combo_enter)
+position_combination.bind("<Leave>", on_combo_leave)
+position_combination.bind("<Motion>", on_combo_motion)
 
 # Watermark Helper Function
-
+ 
 def apply_watermark(input_img, show_preview=True):
     """
     Applies watermark (text or logo) to input_img.
@@ -152,8 +195,29 @@ def apply_watermark(input_img, show_preview=True):
         text_width = bbox[2] - bbox[0]
         text_height = bbox[3] - bbox[1]
 
-        x = (watermarked.width - text_width) // 2
-        y = watermarked.height - text_height - 40  # bottom padding
+        pos = position_var.get()
+        padding = 40
+
+        if pos == "Center":
+            x = (watermarked.width - text_width) // 2
+            y = (watermarked.height - text_height) // 2
+        elif pos == "Top-Left":
+            x, y = 20, 20
+        elif pos == "Top-Center":
+            x = (watermarked.width - text_width) // 2
+            y = 20
+        elif pos == "Top-Right":
+            x = watermarked.width - text_width - 20
+            y = 20
+        elif pos == "Bottom-Left":
+            x = 20
+            y = watermarked.height - text_height - 20
+        elif pos == "Bottom-Center":
+            x = (watermarked.width - text_width) // 2
+            y = watermarked.height - text_height - 20
+        elif pos == "Bottom-Right":
+            x = watermarked.width - text_width - 20
+            y = watermarked.height - text_height - 20
         draw.text((x, y), text, font=font, fill=(255,255,255,128))
 
     elif mode == "logo":
@@ -170,8 +234,27 @@ def apply_watermark(input_img, show_preview=True):
         white_overlay = Image.new("RGBA", resized.size, (255,255,255,128))
         tinted = Image.composite(white_overlay, tinted, resized.split()[3])
 
-        x = (watermarked.width - tinted.width) // 2
-        y = watermarked.height - tinted.height - 40
+        pos = position_var.get()
+        if pos == "Center":
+            x = (watermarked.width - tinted.width) // 2
+            y = (watermarked.height - tinted.width) // 2
+        elif pos == "Top-Left":
+            x, y = 20, 20
+        elif pos == "Top-Center":
+            x = (watermarked.width - tinted.width) // 2
+            y = 20
+        elif pos == "Top-Right":
+            x = watermarked.width - tinted.width - 20
+            y = 20
+        elif pos == "Bottom-Left":
+            x = 20
+            y = watermarked.height - tinted.height - 20
+        elif pos == "Bottom-Center":
+            x = (watermarked.width - tinted.width) // 2
+            y = watermarked.height - tinted.height - 20
+        elif pos == "Bottom-Right":
+            x = watermarked.width - tinted.width - 20
+            y = watermarked.height - tinted.height - 20
         watermarked.paste(tinted, (x, y), tinted)
 
     # If single image preview requested
@@ -238,9 +321,7 @@ def add_watermark():
         messagebox.showinfo("Success", f"Watermarked {len(multiple_images)} images.")
 
 
-
-
-watermark_button = tk.Button(root, text="Add Watermark", command=add_watermark)
+watermark_button = ttk.Button(root, text="Add Watermark", command=add_watermark)
 watermark_button.pack(pady=10)
 
 
