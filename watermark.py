@@ -19,7 +19,7 @@ tk_img = None
 multiple_images = []
 logo_img = None
 logo_path = None
-
+tk_thumbnails = []
 
 # GUI Setup
 
@@ -50,25 +50,36 @@ def upload_logo():
         logo_img = Image.open(logo_path).convert("RGBA")
         messagebox.showinfo("Logo Loaded", "Logo loaded successfully.")
 
-
-
-
 # Canvas for Preview
 
-canvas = tk.Canvas(root, width=PREVIEW_WIDTH + 2*PREVIEW_PADDING,
-                   height=PREVIEW_HEIGHT + 2*PREVIEW_PADDING)
-canvas.pack()
+preview_frame = ttk.Frame(root)
+preview_frame.pack(pady=10, padx=10)
 
+preview_label = ttk.Label(preview_frame, text="Preview")
+preview_label.pack()
+
+canvas = tk.Canvas(
+    preview_frame, 
+    width=PREVIEW_WIDTH + 2 * PREVIEW_PADDING, 
+    height=PREVIEW_HEIGHT + 2 * PREVIEW_PADDING, 
+    bg="lightgray", 
+    relief="flat", 
+    bd=2
+)
+canvas.pack(anchor="center")
 
 # Upload Images (single or multiple)
 
 def upload_image():
-    global img, img_path, tk_img, multiple_images
+    global img, img_path, tk_img, multiple_images, tk_thumbnails
     paths = filedialog.askopenfilenames(filetypes=[("Image Files", "*.png *.jpeg *.jpg")])
     if not paths:
         return
 
     multiple_images = list(paths)
+
+    # Update upload count label
+    upload_count_label.config(text=f"Images uploaded: {len(multiple_images)}")
 
     # If single image, show preview
     if len(multiple_images) == 1:
@@ -99,12 +110,44 @@ def upload_image():
         print("Single image loaded.")
     else:
         img = None
-        canvas.delete("all")
+
+        # Show thumbnails (up to 4 images)
+        thumbnail_size = 120
+        spacing = 12
+        max_thumbnails = 4
+        images_to_show = multiple_images[:max_thumbnails]
+
+        # Calculate width needed for thumbnails
+        cols = 2
+        rows = (len(images_to_show) +1) // cols
+        total_width = cols * thumbnail_size + (cols - 1) * spacing + 20
+        total_height = rows * thumbnail_size + (rows - 1) * spacing + 20
+
+        # Calculate starting position to center
+        start_x = 10
+        start_y = 10
+
+        for idx, path in enumerate(images_to_show):
+            thumb_img = Image.open(path)
+            thumb_img.thumbnail((thumbnail_size, thumbnail_size), Image.Resampling.LANCZOS)
+            tk_thumb = ImageTk.PhotoImage(thumb_img)
+            tk_thumbnails.append(tk_thumb)
+
+            x = start_x + (idx % 2) * (thumbnail_size + spacing)
+            y = start_y + (idx // 2) * (thumbnail_size + spacing)
+
+            canvas.create_image(x, y, anchor="nw", image=tk_thumb)
+
+
         messagebox.showinfo("Images Loaded", f"{len(multiple_images)} images selected.")
         print(f"Loaded {len(multiple_images)} images.")
 
 upload_button = ttk.Button(root, text="Upload Image", command=upload_image)
 upload_button.pack(pady=10)
+
+# Label to show upload count
+upload_count_label = ttk.Label(root, text="Images uploaded: 0", foreground="white")
+upload_count_label.pack(pady=5)
 
 upload_logo_button = ttk.Button(root, text="Upload Logo", command=upload_logo)
 upload_logo_button.pack(pady=5)
@@ -112,7 +155,7 @@ upload_logo_button.pack(pady=5)
 
 # Watermark Input with Placeholder
 
-placeholder_text = "Enter your watermark here"
+placeholder_text = "Enter your watermark text"
 placeholder_color = "grey"
 
 watermark_entry = tk.Entry(root, fg=placeholder_color)
@@ -136,6 +179,10 @@ watermark_entry.bind("<FocusOut>", on_focusout)
 position_label = ttk.Label(root, text="Watermark Position: ")
 position_label.pack(pady=(5, 0))
 
+# Centered Combobox Style
+style = ttk.Style()
+style.configure("Centered.TCombobox", justify="center")
+
 position_var = tk.StringVar()
 position_combination = ttk.Combobox(
     root,
@@ -150,10 +197,18 @@ position_combination = ttk.Combobox(
         "Bottom-Left",
         "Bottom-Center",
         "Bottom-Right"
-    ] 
+    ],
+    style="Centered.TCombobox",
+    justify="center" 
 )
 position_combination.current(0)
 position_combination.pack(pady=10)
+
+# Center the text in the entry field
+position_combination.configure(justify="center")
+
+# Center items in the dropdown list (Combobox's internal Listbox)
+root.option_add("*TCombobox*Listbox.justify", "center")
 
 # Hover cursor effect
 def on_combo_enter(event):
