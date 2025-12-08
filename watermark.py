@@ -19,6 +19,7 @@ tk_img = None
 multiple_images = []
 logo_img = None
 logo_path = None
+tk_thumbnails = None
 tk_thumbnails = []
 
 # GUI Setup
@@ -68,75 +69,75 @@ canvas = tk.Canvas(
 )
 canvas.pack(anchor="center")
 
+thumb_strip = tk.Canvas(
+    root,
+    height=80,
+    bg="lightgray",
+    highlightthickness=0
+)
+
+thumb_strip.pack()
+
 # Upload Images (single or multiple)
 
 def upload_image():
-    global img, img_path, tk_img, multiple_images, tk_thumbnails
+    global img, img_path, tk_img, multiple_images, tk_thumbnails, thumb_strip
     paths = filedialog.askopenfilenames(filetypes=[("Image Files", "*.png *.jpeg *.jpg")])
     if not paths:
         return
 
     multiple_images = list(paths)
 
+    # Always preview the first image
+    img_path = multiple_images[0]
+    img = Image.open(img_path)
+
     # Update upload count label
     upload_count_label.config(text=f"Images uploaded: {len(multiple_images)}")
 
-    # If single image, show preview
-    if len(multiple_images) == 1:
-        img_path = multiple_images[0]
-        img = Image.open(img_path)
+    # Main Preview
+    img_ratio = img.width / img.height
+    preview_ratio = PREVIEW_WIDTH / PREVIEW_HEIGHT
 
-        # Resize for preview while keeping aspect ratio
-        img_ratio = img.width / img.height
-        preview_ratio = PREVIEW_WIDTH / PREVIEW_HEIGHT
-
-        if img_ratio > preview_ratio:
-            new_width = PREVIEW_WIDTH
-            new_height = int(PREVIEW_WIDTH / img_ratio)
-        else:
-            new_height = PREVIEW_HEIGHT
-            new_width = int(PREVIEW_HEIGHT * img_ratio)
-
-        resized_img = img.resize((new_width, new_height))
-        tk_img = ImageTk.PhotoImage(resized_img)
-
-        # Center image
-        x_offset = PREVIEW_PADDING + (PREVIEW_WIDTH - new_width)//2
-        y_offset = PREVIEW_PADDING + (PREVIEW_HEIGHT - new_height)//2
-
-        canvas.delete("all")
-        canvas.create_image(x_offset, y_offset, anchor="nw", image=tk_img)
-
-        print("Single image loaded.")
+    if img_ratio > preview_ratio:
+        new_width = PREVIEW_WIDTH
+        new_height = int(PREVIEW_WIDTH / img_ratio)
     else:
-        img = None
+        new_height = PREVIEW_HEIGHT
+        new_width = int(PREVIEW_HEIGHT * img_ratio)
 
-        # Show thumbnails (up to 4 images)
-        thumbnail_size = 120
-        spacing = 12
-        max_thumbnails = 4
-        images_to_show = multiple_images[:max_thumbnails]
+    resized_img = img.resize((new_width, new_height))
+    tk_img = ImageTk.PhotoImage(resized_img)
 
-        # Calculate width needed for thumbnails
-        cols = 2
-        rows = (len(images_to_show) +1) // cols
-        total_width = cols * thumbnail_size + (cols - 1) * spacing + 20
-        total_height = rows * thumbnail_size + (rows - 1) * spacing + 20
+    canvas.delete("all")
 
-        # Calculate starting position to center
-        start_x = 10
-        start_y = 10
+    # Center main preview
+    x_offset = PREVIEW_PADDING + (PREVIEW_WIDTH - new_width) // 2
+    y_offset = PREVIEW_PADDING + (PREVIEW_HEIGHT - new_height) // 2
 
-        for idx, path in enumerate(images_to_show):
+    canvas.create_image(x_offset, y_offset, anchor="nw", image=tk_img)
+
+    print("Single image loaded.")
+    
+    # ---- Thumbnail strip for multiple images ----
+    thumb_strip.delete("all")
+    tk_thumbnails = []
+
+    if len(multiple_images) > 1:
+        thumbnail_size = 70
+        overlap = 45
+
+        x_offset_thumbs = 10
+        y_offset_thumbs = 5
+
+        for path in multiple_images[:10]: # Show up to 10 stacked thumbnails
             thumb_img = Image.open(path)
             thumb_img.thumbnail((thumbnail_size, thumbnail_size), Image.Resampling.LANCZOS)
             tk_thumb = ImageTk.PhotoImage(thumb_img)
             tk_thumbnails.append(tk_thumb)
 
-            x = start_x + (idx % 2) * (thumbnail_size + spacing)
-            y = start_y + (idx // 2) * (thumbnail_size + spacing)
-
-            canvas.create_image(x, y, anchor="nw", image=tk_thumb)
+            thumb_strip.create_image(x_offset_thumbs, y_offset_thumbs, anchor="nw", image=tk_thumb)
+            x_offset_thumbs += overlap
 
 
         messagebox.showinfo("Images Loaded", f"{len(multiple_images)} images selected.")
