@@ -1,66 +1,63 @@
 # Watermark App
+Watermark App (Tkinter)
 
-Watermark App
-
-This is my first desktop app using Python and Tkinter. It lets you upload one or multiple images and add a watermark automatically.
-
-I made this in the context of a course I'm attending. It's an easy way to watermark photos before posting them online.
+This project is a desktop application built with Python, Tkinter, and Pillow (PIL).
+It allows users to load one or multiple images, preview them, and apply either a text watermark or a logo watermark before exporting the final watermarked images.
 
 Features
+✔️ Image Upload
 
-Upload any image (PNG, JPG, JPEG).
+Upload single or multiple images
 
-Upload multiple images at once and apply the same watermark to all of them.
+Automatically previews the first selected image
 
-Add a text watermark.
+Displays a thumbnail strip with a stacked preview effect for multiple images
 
-Add a logo watermark with automatic semi-transparent white overlay.
+✔️ Watermark Options
 
-Choose watermark position using a dropdown menu: Bottom-Center, Bottom-Right, Top-Center.
+You can choose between two watermark modes:
 
-Preview the image before saving (for single images).
+Text Watermark
 
-Save watermarked images as PNG to preserve transparency. JPEG is only supported for images without transparency.
+Custom text input
 
-Modernized layout with separate buttons for image and logo uploads and improved spacing for radio buttons and dropdown.
+Text positioning: Center, corners, or edges
 
-How to Use
+Adjustable via a centered dropdown selection
 
-Open the app:
+Logo Watermark
 
-python3 watermark.py
+Upload a PNG logo with transparency
 
+Logo automatically scaled
 
-Click Upload Image to select one or more pictures.
+Optionally combined with a semi-transparent white overlay
 
-(Optional) Click Upload Logo to use a logo as a watermark. Ensure the logo is a PNG with transparency.
+Positionable just like the text watermark
 
-Type your watermark text in the input box (if using text).
+✔️ Live Preview
 
-Select the position of the watermark from the dropdown menu.
+The selected image with watermark is previewed on a dedicated canvas
 
-Click Add Watermark to apply it.
+Thumbnails are shown on a separate strip
 
-For a single image: a save dialog will appear.
+Preview always updates when applying a watermark
 
-For multiple images: select a folder to save all watermarked images.
+✔️ Batch Processing
 
-All watermarked images are saved as PNG by default to preserve transparency.
-
-Notes
-
-The text input has placeholder text that disappears when you click on it.
-
-The watermark is semi-transparent by default, so it doesn’t cover the image completely.
-
-Logo watermarks are automatically converted to semi-transparent white to ensure visibility on any image.
-
-Single-image previews are displayed in the app; multiple-image uploads skip previews for efficiency.
-
-Buttons and inputs have improved spacing and layout for a cleaner interface.
+When multiple images are uploaded, the watermark is applied to all of them and saved as individual files.
 
 Requirements
 
-Python 3.14+
+Python 3.x
 
-Pillow (pip install Pillow)
+Pillow (pip install pillow)
+
+Tkinter (bundled with most Python installations)
+
+How to Run
+python watermark_app.py
+
+File Output
+
+All exported images are saved as PNG to preserve transparency and watermark quality.
