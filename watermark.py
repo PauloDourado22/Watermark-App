@@ -90,13 +90,13 @@ def upload_image():
 
     # Always preview the first image
     img_path = multiple_images[0]
-    img = Image.open(img_path)
+    img_preview = Image.open(img_path)  # use for preview only
 
     # Update upload count label
     upload_count_label.config(text=f"Images uploaded: {len(multiple_images)}")
 
     # Main Preview
-    img_ratio = img.width / img.height
+    img_ratio = img_preview.width / img_preview.height
     preview_ratio = PREVIEW_WIDTH / PREVIEW_HEIGHT
 
     if img_ratio > preview_ratio:
@@ -106,7 +106,7 @@ def upload_image():
         new_height = PREVIEW_HEIGHT
         new_width = int(PREVIEW_HEIGHT * img_ratio)
 
-    resized_img = img.resize((new_width, new_height))
+    resized_img = img_preview.resize((new_width, new_height))
     tk_img = ImageTk.PhotoImage(resized_img)
 
     canvas.delete("all")
@@ -114,34 +114,33 @@ def upload_image():
     # Center main preview
     x_offset = PREVIEW_PADDING + (PREVIEW_WIDTH - new_width) // 2
     y_offset = PREVIEW_PADDING + (PREVIEW_HEIGHT - new_height) // 2
-
     canvas.create_image(x_offset, y_offset, anchor="nw", image=tk_img)
 
-    print("Single image loaded.")
-    
+    print("Preview image loaded.")
+
+    # Clear single image for saving logic
+    img = None
+
     # ---- Thumbnail strip for multiple images ----
     thumb_strip.delete("all")
     tk_thumbnails = []
 
-    if len(multiple_images) > 1:
-        thumbnail_size = 70
-        overlap = 45
+    thumbnail_size = 70
+    overlap = 45
+    x_offset_thumbs = 10
+    y_offset_thumbs = 5
 
-        x_offset_thumbs = 10
-        y_offset_thumbs = 5
+    for path in multiple_images[:10]:  # Show up to 10 thumbnails
+        thumb_img = Image.open(path)
+        thumb_img.thumbnail((thumbnail_size, thumbnail_size), Image.Resampling.LANCZOS)
+        tk_thumb = ImageTk.PhotoImage(thumb_img)
+        tk_thumbnails.append(tk_thumb)
 
-        for path in multiple_images[:10]: # Show up to 10 stacked thumbnails
-            thumb_img = Image.open(path)
-            thumb_img.thumbnail((thumbnail_size, thumbnail_size), Image.Resampling.LANCZOS)
-            tk_thumb = ImageTk.PhotoImage(thumb_img)
-            tk_thumbnails.append(tk_thumb)
+        thumb_strip.create_image(x_offset_thumbs, y_offset_thumbs, anchor="nw", image=tk_thumb)
+        x_offset_thumbs += overlap
 
-            thumb_strip.create_image(x_offset_thumbs, y_offset_thumbs, anchor="nw", image=tk_thumb)
-            x_offset_thumbs += overlap
-
-
-        messagebox.showinfo("Images Loaded", f"{len(multiple_images)} images selected.")
-        print(f"Loaded {len(multiple_images)} images.")
+    messagebox.showinfo("Images Loaded", f"{len(multiple_images)} images selected.")
+    print(f"Loaded {len(multiple_images)} images.")
 
 upload_button = ttk.Button(root, text="Upload Image", command=upload_image)
 upload_button.pack(pady=10)
